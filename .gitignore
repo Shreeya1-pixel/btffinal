@@ -74,3 +74,9 @@ tmp/
 temp/
 *.tmp
 
+# Large data files
+*.osm.pbf
+*.pbf
+large_data/
+data/*.pbf
+
