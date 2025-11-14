@@ -1,21 +1,22 @@
-# CheckMate-MTC
+# Neuroverse AI Agent Platform
 
-**Multi-Agent Traffic Control System with Real-Time Anomaly Detection**
+**Multi-Agent AI Platform with Life Manager & Geospatial Intelligence**
 
-A production-grade agentic AI platform for geospatial anomaly detection and intelligent data analysis, featuring custom multi-agent orchestration, real-time trace visualization, and hybrid execution modes.
+A production-grade agentic AI platform featuring intelligent query routing, real-time trace visualization, personal life management (Gmail, WhatsApp, Instagram), and geospatial anomaly detection. Built with custom multi-agent orchestration, hybrid execution modes, and zero-LLM routing for instant responses.
 
 ---
 
 ## Overview
 
-CheckMate-MTC (Multi-Traffic Control) is an advanced AI system that coordinates specialized agents to analyze traffic data, detect anomalies, and generate actionable insights. Built on a custom orchestration framework with OpenAI integration, Redis-backed session management, and real-time event streaming.
+Neuroverse is an advanced AI system that coordinates specialized agents to handle diverse tasks from personal communication management to complex geospatial analysis. The platform features intelligent keyword-based routing for zero-cost execution of simple commands and LLM-powered orchestration for complex queries.
 
 **Key Capabilities:**
-- Intelligent query routing between generic and geospatial modules
-- Multi-agent team collaboration for complex GIS workflows
-- Real-time pipeline execution tracking via SSE
-- Deterministic anomaly detection with ML explainability (SHAP)
-- Context-aware conversation management with session persistence
+- **Life Manager**: Personal assistant for Gmail, WhatsApp, Instagram with contact resolution
+- **Zero-LLM Routing**: Instant execution (< 2ms) for simple commands without API calls
+- **Intelligent Query Routing**: Automatic module selection (Generic, GIS-Anomaly, Life-Manager)
+- **Multi-Agent Team Collaboration**: Coordinated workflows for complex GIS analysis
+- **Real-Time Pipeline Execution**: Live trace visualization via Server-Sent Events
+- **Contact Intelligence**: Natural name-to-identifier resolution across all channels
 
 ---
 
@@ -23,21 +24,29 @@ CheckMate-MTC (Multi-Traffic Control) is an advanced AI system that coordinates 
 
 ### System Design
 
-**Two Execution Modes:**
+**Three Execution Modes:**
 
-1. **Single Agent Mode** (Generic queries)
+1. **Zero-LLM Mode** (Simple Life Manager commands)
+   - Keyword-based routing (< 1ms)
+   - Direct tool execution without API calls
+   - Contact name resolution
+   - Example: "send hi to mom on whatsapp" → ~2ms, $0.00
+
+2. **Single Agent Mode** (Generic queries)
    - LLM-driven tool selection via OpenAI function calling
    - Dynamic tool orchestration based on query analysis
    - General purpose data analysis and summarization
 
-2. **Multi-Agent Team Mode** (GIS-Anomaly queries)
+3. **Multi-Agent Team Mode** (GIS-Anomaly queries)
    - Deterministic pipeline: Data Fetch → Anomaly Detection → Visualization
    - Automated summarization with audience-specific jargon translation
    - Coordinated execution with progress broadcasting
 
 **Core Components:**
-- **Orchestrator Agent:** Routes queries to appropriate modules via GPT-4 analysis
-- **Tool Executor Agent:** Executes tools using OpenAI function calling with LLM synthesis
+- **Orchestrator Agent:** Routes queries via keyword detection (zero-LLM) or GPT-4 analysis
+- **Tool Executor Agent:** Executes tools with intelligent pattern matching or LLM function calling
+- **Life Manager Module:** Gmail, WhatsApp, Instagram communication with contact resolution
+- **Contact Manager:** Maps contact names to email, phone, Instagram handles
 - **Team Orchestrator:** Coordinates multi-agent workflows for complex tasks
 - **Anomaly Detector Agent:** Runs deterministic GIS pipeline (IsolationForest + SHAP)
 - **Session Manager:** Maintains conversation context with Redis persistence
@@ -47,8 +56,10 @@ CheckMate-MTC (Multi-Traffic Control) is an advanced AI system that coordinates 
 ```
 User Query → API Gateway → Agent Service
     ↓
-Orchestrator (GPT-4 routing)
+Orchestrator (Keyword Detection OR GPT-4 routing)
     ↓
+[Life-Manager Module] → Contact Resolution → Direct Tool Execution (< 2ms)
+         OR
 [Generic Module] → ToolExecutor → Tools
          OR
 [GIS Module] → Team Orchestrator
@@ -70,7 +81,7 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 
 ### Backend
 - **Framework:** FastAPI (async API server)
-- **LLM Integration:** OpenAI GPT-4 with function calling
+- **LLM Integration:** OpenAI GPT-4o with function calling
 - **Orchestration:** Custom multi-agent framework (not LangChain/LangGraph/CrewAI)
 - **Session Management:** Redis (async client with pub/sub)
 - **ML/Data Science:** 
@@ -86,6 +97,7 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 - **Styling:** CSS Modules with custom design system
 - **Real-time Updates:** Server-Sent Events (SSE)
 - **Visualization:** react-plotly.js for maps and charts
+- **UI Components:** App sidebar with communication app icons
 
 ### Infrastructure
 - **Containerization:** Docker Compose (backend, frontend, Redis, nginx)
@@ -97,49 +109,38 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 ## Quick Start
 
 ### Prerequisites
-- Python 3.13+
+- Python 3.11+
 - Node.js 18+
 - Docker & Docker Compose
-- OpenAI API key
+- OpenAI API key (optional for simple Life Manager commands)
 
 ### Installation
 
 1. **Clone repository**
    ```bash
-   git clone <repository-url>
-   cd CheckMate-MTC
+   git clone https://github.com/Shreeya1-pixel/btffinal.git
+   cd checkmate-agentic-psg
    ```
 
 2. **Set up environment**
    ```bash
-   # Backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-
-   # Frontend
-   cd frontend
-   npm install
-   ```
-
-3. **Configure environment**
-   ```bash
    # Create .env file
    cat > .env << EOF
    OPENAI_API_KEY=your_api_key_here
-   REDIS_URL=redis://localhost:6379
+   REDIS_HOST=redis
+   REDIS_PORT=6379
    SESSION_TIMEOUT=3600
-   LLM_INFERENCE_MODE=openai
+   LLM_INFERENCE_MODE=cloud
    EOF
    ```
 
-4. **Run with Docker Compose** (Recommended)
+3. **Run with Docker Compose** (Recommended)
    ```bash
    docker-compose up --build
    ```
-   Access at: http://localhost
+   Access at: **http://localhost:80**
 
-5. **Run locally** (Development)
+4. **Run locally** (Development)
    ```bash
    # Terminal 1: Redis
    redis-server
@@ -158,6 +159,34 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 
 ## Usage
 
+### Life Manager - Personal Assistant
+
+**Zero-LLM Commands** (No API key needed):
+```
+✓ "send hi to mom on whatsapp"
+✓ "email boss about the meeting"
+✓ "dm dad on instagram saying hello"
+✓ "send hello to mom on gmail"
+```
+
+**Draft Mode** (Uses AI for content generation):
+```
+✓ "draft an email to mom about the party"
+✓ "draft a whatsapp message to boss"
+```
+
+**Contact Management:**
+```
+✓ "add contact john with email john@example.com and phone +1234567899"
+```
+
+**Default Contacts:**
+- **Mom**: mom@example.com, +1234567890, @mom_instagram
+- **Dad**: dad@example.com, +1234567891, @dad_instagram
+- **Boss**: boss@company.com, +1234567892, @boss_instagram
+
+See [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md) for more examples.
+
 ### API Endpoints
 
 **Core Operations:**
@@ -167,11 +196,26 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 - `GET /api/events/{session_id}` - SSE stream for real-time traces
 - `GET /api/modules` - List available modules and tools
 
+**Life Manager:**
+- `POST /life-manager/email/send` - Send Gmail (generates mailto link)
+- `POST /life-manager/whatsapp/send` - Send WhatsApp (generates wa.me link)
+- `POST /life-manager/schedule` - Schedule event
+- `POST /life-manager/task` - Create task
+
 **Direct Analysis:**
 - `POST /api/analyze-stats` - Direct CSV statistics (bypasses LLM)
 - `POST /api/anomaly/upload` - Upload dataset for anomaly detection
 
 ### Example Queries
+
+**Life Manager Module:**
+```
+"send hi to mom on whatsapp"
+"email boss about the project deadline"
+"dm dad on instagram"
+"draft an email to mom"
+"schedule a meeting with boss tomorrow"
+```
 
 **Generic Module:**
 ```
@@ -190,9 +234,11 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 ### Frontend Features
 
 - **Chat Interface:** Natural language query input with session persistence
+- **App Sidebar:** Quick access to Gmail, WhatsApp, Instagram, and custom apps
 - **Trace Panel:** Real-time agent execution visualization with tool calls
 - **Pipeline Steps:** Progress tracking for multi-agent workflows
 - **Data Visualization:** Interactive Plotly maps and charts
+- **Approval Workflow:** Draft messages with approve/edit/cancel options
 - **Redis Monitor:** Live event stream inspection (dev mode)
 - **SHAP Explainability:** Feature importance for anomaly predictions
 
@@ -201,12 +247,12 @@ See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed technical di
 ## Project Structure
 
 ```
-CheckMate-MTC/
+checkmate-agentic-psg/
 ├── backend/
 │   ├── agents/                 # Agent implementations
 │   │   ├── base.py            # BaseAgent, AgentTrace, AgentResponse
-│   │   ├── orchestrator.py    # Query router (GPT-4)
-│   │   ├── tool_executor.py   # Function calling executor
+│   │   ├── orchestrator.py    # Query router (keyword + GPT-4)
+│   │   ├── tool_executor.py   # Function calling executor with pattern matching
 │   │   ├── team_orchestrator.py  # Multi-agent coordinator
 │   │   └── anomaly_detector.py   # GIS pipeline agent
 │   ├── api/                    # FastAPI routes & models
@@ -216,11 +262,13 @@ CheckMate-MTC/
 │   │   └── logger.py          # Structured logging
 │   ├── services/               # Business logic
 │   │   ├── agent_service.py   # Main orchestration service
-│   │   └── session_manager.py # Session + context management
+│   │   ├── session_manager.py # Session + context management
+│   │   └── contact_manager.py # Contact resolution system
 │   ├── tools/                  # Tool implementations
 │   │   ├── base.py            # Tool registry system
 │   │   ├── generic_tools.py   # Summary, translation, etc.
 │   │   ├── gis_tools.py       # Geo fetch, anomaly detection
+│   │   ├── life_manager_tools.py  # Gmail, WhatsApp, Instagram
 │   │   └── csv_analyzer.py    # Statistical analysis
 │   ├── config.py               # Configuration management
 │   └── main.py                 # FastAPI app entry point
@@ -228,6 +276,8 @@ CheckMate-MTC/
 │   ├── src/
 │   │   ├── components/        # React components
 │   │   │   ├── ChatPanel.tsx
+│   │   │   ├── ChatMessage.tsx
+│   │   │   ├── AppSidebar.tsx  # App sidebar with icons
 │   │   │   ├── TracePanel.tsx
 │   │   │   ├── PipelineSteps.tsx
 │   │   │   ├── GeoPlot.tsx
@@ -241,7 +291,10 @@ CheckMate-MTC/
 ├── Dockerfile.backend
 ├── Dockerfile.frontend
 ├── nginx.conf                  # Reverse proxy config
-└── requirements.txt            # Python dependencies
+├── requirements.txt            # Python dependencies
+├── LIFE_MANAGER_README.md      # Life Manager documentation
+├── QUICK_START_GUIDE.md        # Quick start guide
+└── IMPLEMENTATION_SUMMARY.md   # Technical implementation details
 ```
 
 ---
@@ -252,23 +305,77 @@ CheckMate-MTC/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API authentication | **Required** |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `OPENAI_API_KEY` | OpenAI API authentication | **Required for LLM features** |
+| `REDIS_HOST` | Redis host | `redis` (Docker) / `localhost` |
+| `REDIS_PORT` | Redis port | `6379` |
 | `SESSION_TIMEOUT` | Session TTL in seconds | `3600` |
-| `LLM_INFERENCE_MODE` | LLM provider mode | `openai` |
-| `LOG_LEVEL` | Logging verbosity | `INFO` |
+| `LLM_INFERENCE_MODE` | LLM provider mode | `cloud` |
+
+**Note:** Simple Life Manager commands work without `OPENAI_API_KEY` using zero-LLM routing.
 
 ### Module Configuration
 
 Tools are automatically registered via the Tool Registry system. Add new tools by:
 
 1. Define function with type hints
-2. Decorate with `@tool_registry.register(module="module_name")`
+2. Register with `tool_registry.register(ToolDefinition(...))`
 3. Tool automatically available for agent execution
 
 ---
 
+## Performance
+
+**Latency Characteristics:**
+- **Zero-LLM Life Manager**: ~2ms (keyword routing + contact resolution)
+- **Query routing (Orchestrator)**: ~500-800ms (with LLM) or < 1ms (keyword)
+- **Tool execution (Generic)**: ~1-3s per tool
+- **GIS pipeline (Multi-agent)**: ~5-8s end-to-end
+- **Session retrieval**: <10ms (with cache)
+
+**Cost Optimization:**
+- Zero-LLM routing saves API costs for simple commands
+- Contact resolution: O(1) dictionary lookup
+- Pattern matching: No API calls for direct sends
+
+**Scalability:**
+- Stateless API servers (horizontal scaling ready)
+- Redis single instance (bottleneck for high concurrency)
+- LLM rate limits: Configured per OpenAI tier
+- Suggested improvements: Redis cluster, parallel tool execution
+
+---
+
 ## Development
+
+### Adding a New Communication Channel
+
+See [LIFE_MANAGER_README.md](LIFE_MANAGER_README.md) for detailed instructions. Quick example:
+
+```python
+# 1. Add to Contact Manager
+class Contact:
+    def __init__(self, ..., slack: Optional[str] = None):
+        self.slack = slack
+
+# 2. Create tool
+async def send_slack(to: str, message: str) -> str:
+    resolved = contact_manager.get_slack(to) or to
+    # Implementation
+    return json.dumps(result)
+
+# 3. Register tool
+tool_registry.register(ToolDefinition(
+    name="send_slack",
+    description="Send Slack message",
+    parameters=[...],
+    function=send_slack,
+    module="life-manager"
+))
+
+# 4. Update routing keywords
+# orchestrator.py: Add "slack" to life_manager_keywords
+# tool_executor.py: Add slack detection logic
+```
 
 ### Adding a New Agent
 
@@ -289,18 +396,6 @@ class CustomAgent(BaseAgent):
         return AgentResponse(content="...", traces=[trace])
 ```
 
-### Adding a New Tool
-
-```python
-from backend.tools.base import tool_registry
-
-@tool_registry.register(module="custom_module")
-async def my_tool(param1: str, param2: int) -> str:
-    """Tool description for LLM"""
-    # Implementation
-    return "result"
-```
-
 ### Running Tests
 
 ```bash
@@ -317,60 +412,12 @@ pytest tests/integration/
 
 ---
 
-## Redis Architecture
+## Documentation
 
-**Session Storage:**
-- Key pattern: `session:{session_id}`
-- TTL: 3600 seconds
-- Data structure: JSON with messages, context, active_module
-
-**Event Bus:**
-- Channel pattern: `session:{session_id}`
-- Pub/Sub for real-time agent events
-- Event types: agent_started, agent_completed, tool_result, pipeline_step
-
-**Agent Handoff:**
-- Direct Python async calls (NOT Redis-mediated)
-- Synchronous execution with asynchronous event publishing
-- Context passed explicitly between agents
-
----
-
-## Performance
-
-**Latency Characteristics:**
-- Query routing (Orchestrator): ~500-800ms
-- Tool execution (Generic): ~1-3s per tool
-- GIS pipeline (Multi-agent): ~5-8s end-to-end
-- Session retrieval: <10ms (with cache)
-
-**Scalability:**
-- Stateless API servers (horizontal scaling ready)
-- Redis single instance (bottleneck for high concurrency)
-- LLM rate limits: Configured per OpenAI tier
-- Suggested improvements: Redis cluster, parallel tool execution
-
----
-
-## Monitoring & Observability
-
-**Structured Logging:**
-- JSON format with correlation IDs
-- Agent execution traces with timing
-- Tool call tracking with parameters
-- Error context with stack traces
-
-**Real-Time Tracing:**
-- SSE event stream per session
-- Frontend trace panel visualization
-- Pipeline step progress indicators
-- Redis monitor for event inspection
-
-**Metrics:**
-- Agent execution duration
-- Tool call frequency
-- Session creation rate
-- LLM token usage (logged)
+- **[LIFE_MANAGER_README.md](LIFE_MANAGER_README.md)** - Complete Life Manager documentation
+- **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - Quick start guide with examples
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Technical implementation details
+- **[ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md)** - System architecture diagrams
 
 ---
 
@@ -378,9 +425,11 @@ pytest tests/integration/
 
 - API key management via environment variables
 - Session isolation per user
+- Contact data: Currently in-memory (encrypt in production)
 - Redis authentication recommended for production
 - Rate limiting suggested for public deployments
 - Input sanitization for tool parameters
+- OAuth2 integration points marked for Gmail/Instagram APIs
 
 ---
 
@@ -389,7 +438,7 @@ pytest tests/integration/
 ### Docker Production
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose up --build -d
 ```
 
 ### Environment-Specific Configs
@@ -409,7 +458,7 @@ docker-compose -f docker-compose.prod.yml up -d
 5. Submit pull request
 
 **Code Style:**
-- Backend: Black formatter, type hints required
+- Backend: Type hints required, Google-style docstrings
 - Frontend: Prettier, ESLint rules enforced
 - Tests: Required for new features
 
@@ -417,28 +466,28 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## License
 
-[Your License Here]
+MIT License
 
 ---
 
 ## Acknowledgments
 
-- OpenAI for GPT-4 and function calling capabilities
+- OpenAI for GPT-4o and function calling capabilities
 - FastAPI for modern async Python framework
 - Redis for high-performance event streaming
 - Plotly for interactive visualizations
-- Warp terminal for UI design inspiration
+- React & TypeScript community
 
 ---
 
 ## Support
 
-- Documentation: [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md), [PRD.md](PRD.md)
-- Issues: GitHub Issues tracker
-- Contact: [Your contact info]
+- **Documentation**: See [LIFE_MANAGER_README.md](LIFE_MANAGER_README.md), [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)
+- **Issues**: GitHub Issues tracker
+- **Repository**: https://github.com/Shreeya1-pixel/btffinal
 
 ---
 
-**Version:** 0.1.0  
+**Version:** 0.2.0  
 **Last Updated:** November 2025  
-**Status:** Production-ready prototype
+**Status:** Production-ready with Life Manager features
