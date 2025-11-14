@@ -1,0 +1,222 @@
+.app-sidebar {
+  width: 60px;
+  background: var(--bg-secondary, #1a1a1a);
+  border-right: 1px solid var(--border-color, #2a2a2a);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  padding: 12px 0;
+}
+
+.app-sidebar-header {
+  padding: 0 12px 12px;
+  border-bottom: 1px solid var(--border-color, #2a2a2a);
+  margin-bottom: 12px;
+}
+
+.app-sidebar-header h3 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary, #888);
+  margin: 0;
+  font-weight: 600;
+}
+
+.app-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.app-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-tertiary, #252525);
+  border: 1px solid var(--border-color, #2a2a2a);
+  position: relative;
+  color: var(--text-primary, #fff);
+}
+
+.app-icon:hover {
+  background: var(--bg-hover, #2a2a2a);
+  transform: translateY(-2px);
+  border-color: var(--app-color, #6366f1);
+}
+
+.app-icon.connected {
+  border-color: var(--app-color, #6366f1);
+  box-shadow: 0 0 0 2px rgba(var(--app-color-rgb, 99, 102, 241), 0.2);
+}
+
+.app-icon-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon svg {
+  color: var(--app-color, #6366f1);
+}
+
+.connection-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid var(--bg-secondary, #1a1a1a);
+}
+
+.app-icon.add-app {
+  background: transparent;
+  border: 2px dashed var(--border-color, #2a2a2a);
+  color: var(--text-secondary, #888);
+}
+
+.app-icon.add-app:hover {
+  background: var(--bg-hover, #2a2a2a);
+  border-color: var(--text-secondary, #888);
+  color: var(--text-primary, #fff);
+}
+
+.remove-app-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.app-icon:hover .remove-app-btn {
+  opacity: 1;
+}
+
+.remove-app-btn:hover {
+  background: #dc2626;
+}
+
+.add-app-menu {
+  position: absolute;
+  left: 70px;
+  top: 60px;
+  background: var(--bg-secondary, #1a1a1a);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 250px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.add-app-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.add-app-menu-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.add-app-menu-header button {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-app-menu-header button:hover {
+  color: var(--text-primary, #fff);
+}
+
+.add-app-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custom-app-input {
+  padding: 8px 12px;
+  background: var(--bg-tertiary, #252525);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+}
+
+.custom-app-input:focus {
+  outline: none;
+  border-color: var(--app-color, #6366f1);
+}
+
+.custom-app-color {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.add-app-submit-btn {
+  padding: 8px 16px;
+  background: var(--app-color, #6366f1);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-app-submit-btn:hover {
+  background: var(--app-color-hover, #4f46e5);
+}
+
+.custom-app-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+

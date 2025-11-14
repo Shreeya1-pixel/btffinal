@@ -109,10 +109,26 @@ async def chat(request: QueryRequest) -> QueryResponse:
         )
         return QueryResponse(**result)
     except Exception as e:
-        logger.error("chat_processing_failed", error=str(e), query=request.query)
+        error_str = str(e)
+        logger.error("chat_processing_failed", error=error_str, query=request.query)
+        
+        # Provide user-friendly error messages
+        if "quota" in error_str.lower() or "429" in error_str or "insufficient_quota" in error_str:
+            detail = "API Quota Exceeded: Your OpenAI API key has exceeded its quota. Please check your billing at https://platform.openai.com/account/billing"
+            status_code = status.HTTP_402_PAYMENT_REQUIRED
+        elif "401" in error_str or "invalid" in error_str.lower() and "api key" in error_str.lower():
+            detail = "Invalid API Key: Please check your OpenAI API key configuration."
+            status_code = status.HTTP_401_UNAUTHORIZED
+        elif "model" in error_str.lower() and ("not found" in error_str.lower() or "does not exist" in error_str.lower()):
+            detail = f"Model Error: {error_str}"
+            status_code = status.HTTP_400_BAD_REQUEST
+        else:
+            detail = f"Failed to process query: {error_str}"
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process query: {str(e)}"
+            status_code=status_code,
+            detail=detail
         )
 
 
@@ -183,6 +199,92 @@ async def analyze_csv_stats_direct(request: Request):
         return result
     except Exception as e:
         logger.error("direct_csv_analysis_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/life-manager/email/send")
+async def send_email_endpoint(request: Request):
+    """Send an email via the life manager."""
+    try:
+        body = await request.json()
+        from backend.tools.life_manager_tools import send_email
+        
+        result_json = await send_email(
+            to=body.get("to"),
+            subject=body.get("subject"),
+            body=body.get("body"),
+            cc=body.get("cc"),
+            bcc=body.get("bcc"),
+            smtp_server=body.get("smtp_server"),
+            smtp_port=body.get("smtp_port"),
+            username=body.get("username"),
+            password=body.get("password")
+        )
+        result = json.loads(result_json)
+        return result
+    except Exception as e:
+        logger.error("email_send_endpoint_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/life-manager/schedule")
+async def schedule_event_endpoint(request: Request):
+    """Schedule an event."""
+    try:
+        body = await request.json()
+        from backend.tools.life_manager_tools import schedule_event
+        
+        result_json = await schedule_event(
+            title=body.get("title"),
+            start_time=body.get("start_time"),
+            duration_minutes=body.get("duration_minutes", 60),
+            description=body.get("description"),
+            location=body.get("location"),
+            attendees=body.get("attendees")
+        )
+        result = json.loads(result_json)
+        return result
+    except Exception as e:
+        logger.error("schedule_event_endpoint_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/life-manager/task")
+async def create_task_endpoint(request: Request):
+    """Create a task."""
+    try:
+        body = await request.json()
+        from backend.tools.life_manager_tools import create_task
+        
+        result_json = await create_task(
+            title=body.get("title"),
+            description=body.get("description"),
+            due_date=body.get("due_date"),
+            priority=body.get("priority", "medium"),
+            status=body.get("status", "todo")
+        )
+        result = json.loads(result_json)
+        return result
+    except Exception as e:
+        logger.error("create_task_endpoint_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/life-manager/whatsapp/send")
+async def send_whatsapp_endpoint(request: Request):
+    """Sends a WhatsApp message after user approval."""
+    try:
+        body = await request.json()
+        from backend.tools.life_manager_tools import send_whatsapp_message
+        
+        result_json = await send_whatsapp_message(
+            phone_number=body.get("phone_number"),
+            message=body.get("message")
+        )
+        result = json.loads(result_json)
+        return result
+    except Exception as e:
+        logger.error("whatsapp_send_endpoint_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 

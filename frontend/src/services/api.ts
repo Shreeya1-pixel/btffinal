@@ -71,5 +71,51 @@ export const api = {
     });
     return response.data;
   },
+
+  async sendEmail(params: {
+    to: string;
+    subject: string;
+    body: string;
+    cc?: string;
+    bcc?: string;
+    smtp_server?: string;
+    smtp_port?: number;
+    username?: string;
+    password?: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/life-manager/email/send', params);
+    return response.data;
+  },
+
+  async scheduleEvent(params: {
+    title: string;
+    start_time: string;
+    duration_minutes?: number;
+    description?: string;
+    location?: string;
+    attendees?: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/life-manager/schedule', params);
+    return response.data;
+  },
+
+  async createTask(params: {
+    title: string;
+    description?: string;
+    due_date?: string;
+    priority?: string;
+    status?: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/life-manager/task', params);
+    return response.data;
+  },
+
+  async sendWhatsAppMessage(params: {
+    phone_number: string;
+    message: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/life-manager/whatsapp/send', params);
+    return response.data;
+  },
 };
 

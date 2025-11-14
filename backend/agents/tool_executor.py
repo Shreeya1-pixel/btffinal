@@ -40,6 +40,93 @@ Always explain which tools you're using and why."""
         self.module = module
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         
+    def _detect_tool_from_query(self, query: str) -> Optional[tuple[str, dict]]:
+        """
+        Keyword-based tool detection for life-manager queries.
+        
+        Detects:
+        - Communication channel (whatsapp, email, gmail, instagram)
+        - Action (send, draft)
+        - Recipient (contact name or direct identifier)
+        - Message content
+        
+        Returns:
+            (tool_name, arguments_dict) or None if no clear match
+        """
+        if self.module != "life-manager":
+            return None
+            
+        import re
+        query_lower = query.lower()
+        
+        # Determine if draft or direct send
+        is_draft = "draft" in query_lower
+        action_suffix = "draft" if is_draft else "send"
+        
+        # Extract recipient - pattern: "to <name>" or "message <name>"
+        recipient = None
+        recipient_patterns = [
+            r'to\s+([a-zA-Z]+)',  # "to mom", "to boss"
+            r'message\s+([a-zA-Z]+)',  # "message mom"
+            r'dm\s+([a-zA-Z]+)',  # "dm mom"
+        ]
+        for pattern in recipient_patterns:
+            match = re.search(pattern, query_lower)
+            if match:
+                recipient = match.group(1)
+                break
+        
+        # Extract message content - everything in quotes or after "saying"
+        message = None
+        # Try quoted content first
+        quote_match = re.search(r'["\']([^"\']+)["\']', query)
+        if quote_match:
+            message = quote_match.group(1)
+        elif "saying" in query_lower:
+            parts = query.split("saying", 1)
+            if len(parts) > 1:
+                message = parts[1].strip().strip('"\'.,')
+        elif "send" in query_lower:
+            # Extract everything after "send" until "to"
+            send_parts = query_lower.split("send", 1)
+            if len(send_parts) > 1:
+                between = send_parts[1].split("to")[0].strip()
+                # Remove common words
+                between = re.sub(r'\b(a|an|the|on|via)\b', '', between).strip()
+                if between and len(between) < 50:  # Reasonable message length
+                    message = between
+        
+        # Default message if not found
+        if not message:
+            message = "hi"
+        
+        if not recipient:
+            recipient = "unknown"
+        
+        # WhatsApp detection
+        if "whatsapp" in query_lower:
+            tool_name = f"draft_whatsapp" if is_draft else "send_whatsapp"
+            return (tool_name, {"to": recipient, "message": message})
+        
+        # Gmail/Email detection
+        if "gmail" in query_lower or "email" in query_lower:
+            # For email, we need subject - try to extract or use default
+            subject = "Quick message"
+            if "subject" in query_lower:
+                subj_match = re.search(r'subject[:\s]+([^,\.]+)', query_lower)
+                if subj_match:
+                    subject = subj_match.group(1).strip()
+            
+            tool_name = f"draft_gmail" if is_draft else "send_gmail"
+            return (tool_name, {"to": recipient, "subject": subject, "body": message})
+        
+        # Instagram detection
+        if "instagram" in query_lower or "insta" in query_lower:
+            tool_name = f"draft_instagram" if is_draft else "send_instagram"
+            return (tool_name, {"to": recipient, "message": message})
+        
+        return None
+        
     async def execute(
         self, 
         query: str, 
@@ -59,6 +146,63 @@ Always explain which tools you're using and why."""
         start_time = time.time()
         
         try:
+            # Try keyword-based tool detection first (for life-manager)
+            detected_tool = self._detect_tool_from_query(query)
+            
+            if detected_tool:
+                tool_name, tool_args = detected_tool
+                trace.tools_called.append(tool_name)
+                logger.info("executing_tool_direct", tool=tool_name, args=tool_args, method="keyword_detection")
+                
+                tool_def = tool_registry.get_tool(tool_name)
+                result = await tool_def.function(**tool_args)
+                
+                tool_results = [{
+                    "tool": tool_name,
+                    "args": tool_args,
+                    "result": result
+                }]
+                
+                # Publish tool_result event
+                try:
+                    await redis_client.publish_agent_event(
+                        (context or {}).get("channel", "neuroverse"),
+                        {"type": "tool_result", "agent": self.name, "tool": tool_name},
+                    )
+                except Exception:
+                    pass
+                
+                # Parse result to create content
+                try:
+                    result_data = json.loads(result)
+                    content = json.dumps(result_data, indent=2)
+                except:
+                    content = str(result)
+                
+                trace.duration_ms = (time.time() - start_time) * 1000
+                trace.metadata = {
+                    "module": self.module,
+                    "tool_results": tool_results,
+                    "direct_execution": True
+                }
+                
+                logger.info(
+                    "tool_executor_completed_direct",
+                    module=self.module,
+                    tool=tool_name,
+                    duration_ms=trace.duration_ms
+                )
+                
+                return AgentResponse(
+                    content=content,
+                    traces=[trace],
+                    metadata={
+                        "tool_results": tool_results,
+                        "module": self.module
+                    }
+                )
+            
+            # Fall back to LLM-based tool selection
             # Get available tools for this module
             tools = tool_registry.get_tools_by_module(self.module)
             tool_schemas = [tool.to_schema() for tool in tools]
@@ -70,7 +214,7 @@ Always explain which tools you're using and why."""
             
             # Use function calling to execute tools
             response = await self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=messages,
                 tools=[{"type": "function", "function": schema} for schema in tool_schemas],
                 tool_choice="auto"
@@ -121,7 +265,7 @@ Always explain which tools you're using and why."""
             # Get final response after tool execution
             if tool_calls:
                 final_response = await self.client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-4o",
                     messages=messages
                 )
                 content = final_response.choices[0].message.content or ""

@@ -25,7 +25,8 @@ class AgentService:
         self.orchestrator = OrchestratorAgent()
         self.executors = {
             "generic": ToolExecutorAgent("generic"),
-            "gis-anomaly": ToolExecutorAgent("gis-anomaly")
+            "gis-anomaly": ToolExecutorAgent("gis-anomaly"),
+            "life-manager": ToolExecutorAgent("life-manager")
         }
         self.team_orchestrator = TeamOrchestrator()
         

@@ -33,7 +33,7 @@ class OpenAIProvider:
     async def create_completion(
         self, 
         messages: list[dict[str, str]], 
-        model: str = "gpt-4",
+        model: str = "gpt-4o",
         **kwargs: Any
     ) -> str:
         """

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Cpu } from 'lucide-react';
+import { User, Cpu, Bot, CheckCircle, Edit, XCircle } from 'lucide-react';
 import { GeoPlot } from './GeoPlot';
 import { PipelineSteps } from './PipelineSteps';
 import { useAppStore } from '../store/useAppStore';
@@ -7,9 +7,10 @@ import type { Message } from '../types';
 
 interface ChatMessageProps {
   message: Message;
+  onApproval?: (action: string, data: any) => void;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onApproval }) => {
   const isUser = message.role === 'user';
   const { pipelineSteps } = useAppStore();
   const steps = pipelineSteps.get(message.timestamp) || [];
@@ -22,6 +23,38 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const codeError = (message.metadata as any)?.code_error as string | undefined;
   const codeExit = (message.metadata as any)?.code_exit as number | undefined;
 
+  // Check for special response types
+  let approvalData: any = null;
+  let displayContent = message.content;
+  
+  try {
+    const contentData = JSON.parse(message.content);
+    
+    // Check for approval workflow (draft mode)
+    if (contentData.status === 'requires_approval') {
+      approvalData = contentData;
+    }
+    // Check for link generation (direct send mode)
+    else if (contentData.status === 'link_generated') {
+      // Create user-friendly message
+      const channel = contentData.whatsapp_url ? 'WhatsApp' : 
+                     contentData.mailto_link ? 'Gmail' : 
+                     contentData.instagram_url ? 'Instagram' : 'app';
+      
+      const recipient = contentData.to_name || contentData.phone_number || contentData.to || contentData.instagram_handle || 'contact';
+      
+      displayContent = `✓ Opening ${channel} to message ${recipient}...`;
+      
+      // Auto-open the link
+      setTimeout(() => {
+        const url = contentData.whatsapp_url || contentData.mailto_link || contentData.instagram_url;
+        if (url) {
+          window.open(url, '_blank');
+        }
+      }, 100);
+    }
+  } catch {}
+
   return (
     <div className={`message ${isUser ? 'message-user' : 'message-assistant'}`}>
       <div className="message-icon">
@@ -29,18 +62,42 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
       <div className="message-content">
         <div className="message-header">
-          <span className="message-role">{isUser ? 'You' : 'Neuroverse'}</span>
-          <span className="message-time">
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </span>
+          <span>{isUser ? 'You' : 'Neuroverse'}</span>
+          <span className="message-timestamp">{new Date(message.timestamp).toLocaleTimeString()}</span>
         </div>
         
-        {/* Show pipeline steps if they exist */}
-        {!isUser && steps.length > 0 && (
-          <PipelineSteps steps={steps} />
+        {approvalData ? (
+          <div className="approval-content">
+            <div className="approval-header">
+              <Bot size={16} /> <span>Action Required</span>
+            </div>
+            <p><strong>Action:</strong> {approvalData.action.replace(/_/g, ' ')}</p>
+            {approvalData.to_name && <p><strong>To:</strong> {approvalData.to_name}</p>}
+            {approvalData.phone_number && <p><strong>Phone:</strong> {approvalData.phone_number}</p>}
+            {approvalData.to && <p><strong>Email:</strong> {approvalData.to}</p>}
+            {approvalData.instagram_handle && <p><strong>Instagram:</strong> {approvalData.instagram_handle}</p>}
+            {approvalData.subject && <p><strong>Subject:</strong> {approvalData.subject}</p>}
+            {approvalData.message && <p className="approval-message-body">"{approvalData.message}"</p>}
+            {approvalData.body && <p className="approval-message-body">"{approvalData.body}"</p>}
+            
+            <div className="approval-buttons">
+              <button className="approve-btn" onClick={() => onApproval?.(approvalData.action, approvalData)}>
+                <CheckCircle size={16} /> Approve & Send
+              </button>
+              <button className="edit-btn">
+                <Edit size={16} /> Edit
+              </button>
+              <button className="cancel-btn">
+                <XCircle size={16} /> Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: displayContent }} />
         )}
-        
-        <div className="message-text">{message.content}</div>
+
+        {/* Display pipeline steps if they exist for this message */}
+        {steps.length > 0 && <PipelineSteps steps={steps} />}
         
         {/* Render GeoPlot inline if geo data exists */}
         {geoData && (

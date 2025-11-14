@@ -27,3 +27,7 @@ beautifulsoup4==4.12.3
 # Logging & Monitoring
 structlog==23.2.0
 
+uvicorn
+watchfiles
+# pywhatkit
+

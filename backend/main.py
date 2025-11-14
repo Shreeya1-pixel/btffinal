@@ -13,7 +13,7 @@ from backend.api.routes import router
 from backend import __version__
 
 # Import tools to register them
-from backend.tools import generic_tools, gis_tools, csv_analyzer
+from backend.tools import generic_tools, gis_tools, csv_analyzer, life_manager_tools
 
 configure_logging(settings.debug)
 logger = get_logger(__name__)

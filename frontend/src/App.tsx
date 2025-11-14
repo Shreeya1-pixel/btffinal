@@ -4,8 +4,11 @@ import { ChatPanel } from './components/ChatPanel';
 import { TracePanel } from './components/TracePanel';
 import { AnomalyLab } from './components/AnomalyLab';
 import { RedisMonitor } from './components/RedisMonitor';
+import { AppSidebar } from './components/AppSidebar';
 import { useAppStore } from './store/useAppStore';
 import { api } from './services/api';
+
+import './components/AppSidebar.css';
 
 const App: React.FC = () => {
   const {
@@ -108,11 +111,86 @@ const App: React.FC = () => {
       addTraces(response.traces);
       setActiveModule(response.module);
       setSessionId(response.session_id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send message:', error);
+      
+      // Extract error message from API response
+      let errorMessage = 'Sorry, I encountered an error processing your request.';
+      
+      if (error?.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (detail.includes('quota') || detail.includes('429')) {
+          errorMessage = '⚠️ API Quota Exceeded: Your OpenAI API key has exceeded its quota. Please check your billing and add credits at https://platform.openai.com/account/billing';
+        } else if (detail.includes('401') || detail.includes('Invalid API key')) {
+          errorMessage = '⚠️ Invalid API Key: Please check your OpenAI API key configuration.';
+        } else if (detail.includes('model')) {
+          errorMessage = `⚠️ Model Error: ${detail}`;
+        } else {
+          errorMessage = `⚠️ Error: ${detail}`;
+        }
+      } else if (error?.message) {
+        errorMessage = `⚠️ Error: ${error.message}`;
+      }
+      
       addMessage({
         role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request.',
+        content: errorMessage,
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApproval = async (action: string, data: any) => {
+    try {
+      setIsLoading(true);
+
+      if (action === 'send_whatsapp') {
+        const result = await api.sendWhatsAppMessage({
+          phone_number: data.phone_number,
+          message: data.message,
+        });
+
+        if (result.status === 'link_generated' && result.whatsapp_url) {
+          addMessage({
+            role: 'assistant',
+            content: `✓ Opening WhatsApp to send message to ${data.to_name || data.phone_number}...`,
+            timestamp: new Date().toISOString(),
+            metadata: { final_status: result },
+          });
+          window.open(result.whatsapp_url, '_blank');
+        } else {
+          throw new Error(result.message || 'Failed to generate WhatsApp link.');
+        }
+      } else if (action === 'send_gmail') {
+        // Gmail uses mailto link
+        const mailto_link = `mailto:${data.to}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
+        
+        addMessage({
+          role: 'assistant',
+          content: `✓ Opening your email client to send to ${data.to_name || data.to}...`,
+          timestamp: new Date().toISOString(),
+        });
+        window.open(mailto_link, '_blank');
+      } else if (action === 'send_instagram') {
+        // Instagram opens the DM conversation
+        const instagram_url = `https://www.instagram.com/direct/t/${data.instagram_handle?.replace('@', '')}`;
+        
+        addMessage({
+          role: 'assistant',
+          content: `✓ Opening Instagram to send message to ${data.to_name || data.instagram_handle}...<br><br>Please manually send: "${data.message}"`,
+          timestamp: new Date().toISOString(),
+        });
+        window.open(instagram_url, '_blank');
+      } else {
+        throw new Error(`Unknown action: ${action}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to handle approval:', error);
+      addMessage({
+        role: 'assistant',
+        content: `⚠️ Error: ${error?.response?.data?.detail || error.message}`,
         timestamp: new Date().toISOString(),
       });
     } finally {
@@ -149,21 +227,41 @@ const App: React.FC = () => {
     return () => eventSource.close();
   }, [messages, updatePipelineStep]);
 
+  const handleAppClick = (appId: string) => {
+    console.log('App clicked:', appId);
+    // Handle app-specific actions
+    if (appId === 'gmail') {
+      handleSendMessage('Open Gmail and show my inbox');
+    } else if (appId === 'whatsapp') {
+      handleSendMessage('Open WhatsApp and show my recent chats');
+    } else if (appId === 'instagram') {
+      handleSendMessage('Open Instagram and show my feed');
+    } else if (appId === 'noon') {
+      handleSendMessage('Open Noon and show my orders');
+    }
+  };
+
+  const handleAddApp = () => {
+    console.log('Add app clicked');
+  };
+
   return (
-    <div className="app">
-      <Header />
-      {llmMode === 'local' && (
-        <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-tertiary)', fontSize: 12 }}>
-          Parallel multi-agent execution is limited in local mode. Switch to cloud mode for full features.
-        </div>
-      )}
-      <main className="app-main">
+    <div className="app-container">
+      <AppSidebar onAppClick={handleAppClick} onAddApp={handleAddApp} />
+      <div className="main-content">
+        <Header />
+        {llmMode === 'local' && (
+          <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-tertiary)', fontSize: 12 }}>
+            Parallel multi-agent execution is limited in local mode. Switch to cloud mode for full features.
+          </div>
+        )}
+        <main className="app-main">
         <div className={`chat-container ${showTraces ? 'with-trace' : ''}`}>
           {/* Quick tab switch by tracking header state via query selector would be brittle; we keep Chat default and provide Anomaly Lab via route-like toggle using local state for now. */}
           {activeTab === 'anomaly' ? (
             <AnomalyLab />
           ) : (
-            <ChatPanel onSendMessage={handleSendMessage} />
+            <ChatPanel onSendMessage={handleSendMessage} onApproval={handleApproval} />
           )}
         </div>
         {showTraces && (
@@ -171,8 +269,9 @@ const App: React.FC = () => {
             <TracePanel traces={traces} />
           </div>
         )}
-      </main>
-      <RedisMonitor />
+        </main>
+        <RedisMonitor />
+      </div>
     </div>
   );
 };

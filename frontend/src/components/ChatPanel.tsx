@@ -6,9 +6,10 @@ import { Sparkles } from 'lucide-react';
 
 interface ChatPanelProps {
   onSendMessage: (message: string) => void;
+  onApproval: (action: string, data: any) => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ onSendMessage }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ onSendMessage, onApproval }) => {
   const { messages, isLoading } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,8 +44,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onSendMessage }) => {
           </div>
         ) : (
           <>
-            {messages.map((message, index) => (
-              <ChatMessage key={index} message={message} />
+            {messages.map((msg, index) => (
+              <ChatMessage key={index} message={msg} onApproval={onApproval} />
             ))}
             <div ref={messagesEndRef} />
           </>
