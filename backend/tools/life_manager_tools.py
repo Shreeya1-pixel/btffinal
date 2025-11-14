@@ -164,17 +164,28 @@ async def draft_whatsapp(
     Draft a WhatsApp message for approval.
     
     Resolves contact names to phone numbers automatically.
+    Only accepts contact names, not phone numbers.
     
     Args:
-        to: Recipient name or phone number
+        to: Recipient contact name (e.g., "mom", "dad", "boss")
         message: Message content
         
     Returns:
         JSON string with draft requiring approval
     """
     try:
-        # Resolve contact name to phone number
-        resolved_phone = contact_manager.get_phone(to) or to
+        # Resolve contact name to phone number - REQUIRED, no fallback
+        contact = contact_manager.resolve_contact(to)
+        if not contact or not contact.phone:
+            error_msg = f"Contact '{to}' not found. Please add the contact first or use a valid contact name."
+            logger.warning("whatsapp_contact_not_found", contact_name=to)
+            return json.dumps({
+                "error": error_msg,
+                "status": "failed",
+                "suggestion": f"Add contact with: 'add contact {to} with phone +1234567890'"
+            })
+        
+        resolved_phone = contact.phone
         
         draft = {
             "action": "send_whatsapp",
@@ -202,20 +213,41 @@ async def send_whatsapp(
     Generate WhatsApp deep link to send message.
     
     Opens WhatsApp (web or mobile) with pre-filled message.
+    Only accepts contact names, not phone numbers.
     
     Args:
-        to: Recipient name or phone number
+        to: Recipient contact name (e.g., "mom", "dad", "boss")
         message: Message content
         
     Returns:
         JSON string with WhatsApp link
     """
     try:
-        # Resolve contact name to phone number
-        resolved_phone = contact_manager.get_phone(to) or to
+        # Resolve contact name to phone number - REQUIRED, no fallback
+        contact = contact_manager.resolve_contact(to)
+        if not contact or not contact.phone:
+            error_msg = f"Contact '{to}' not found. Please add the contact first or use a valid contact name."
+            logger.warning("whatsapp_contact_not_found", contact_name=to)
+            return json.dumps({
+                "error": error_msg,
+                "status": "failed",
+                "suggestion": f"Add contact with: 'add contact {to} with phone +1234567890'"
+            })
         
-        # Clean phone number (remove non-digits)
+        resolved_phone = contact.phone
+        
+        # Clean phone number (remove non-digits, but keep country code)
         clean_phone = "".join(filter(str.isdigit, resolved_phone))
+        
+        # Validate phone number format (should have at least 10 digits)
+        if len(clean_phone) < 10:
+            error_msg = f"Invalid phone number for contact '{to}'. Phone number must have at least 10 digits."
+            logger.warning("whatsapp_invalid_phone", contact_name=to, phone=resolved_phone)
+            return json.dumps({
+                "error": error_msg,
+                "status": "failed",
+                "suggestion": f"Update contact '{to}' with a valid phone number"
+            })
         
         # Create WhatsApp deep link
         encoded_message = urllib.parse.quote(message)
@@ -525,9 +557,9 @@ tool_registry.register(ToolDefinition(
 # WhatsApp Tools
 tool_registry.register(ToolDefinition(
     name="draft_whatsapp",
-    description="Draft a WhatsApp message. Use contact names (e.g., 'mom') or phone numbers. Returns a draft requiring approval.",
+    description="Draft a WhatsApp message. ONLY accepts contact names (e.g., 'mom', 'dad', 'boss'), NOT phone numbers. The contact must exist in the contact list. Returns a draft requiring approval.",
     parameters=[
-        ToolParameter(name="to", type="string", description="Recipient name or phone number with country code", required=True),
+        ToolParameter(name="to", type="string", description="Recipient contact name (e.g., 'mom', 'dad', 'boss'). Phone numbers are NOT accepted.", required=True),
         ToolParameter(name="message", type="string", description="Message content", required=True),
     ],
     function=draft_whatsapp,
@@ -536,9 +568,9 @@ tool_registry.register(ToolDefinition(
 
 tool_registry.register(ToolDefinition(
     name="send_whatsapp",
-    description="Generate a WhatsApp deep link to send a message. Opens WhatsApp with pre-filled message.",
+    description="Generate a WhatsApp deep link to send a message. ONLY accepts contact names (e.g., 'mom', 'dad', 'boss'), NOT phone numbers. The contact must exist in the contact list. Opens WhatsApp with pre-filled message.",
     parameters=[
-        ToolParameter(name="to", type="string", description="Recipient name or phone number", required=True),
+        ToolParameter(name="to", type="string", description="Recipient contact name (e.g., 'mom', 'dad', 'boss'). Phone numbers are NOT accepted.", required=True),
         ToolParameter(name="message", type="string", description="Message content", required=True),
     ],
     function=send_whatsapp,

@@ -63,20 +63,28 @@ Always explain which tools you're using and why."""
         is_draft = "draft" in query_lower
         action_suffix = "draft" if is_draft else "send"
         
-        # Extract recipient - pattern: "to <name>" or "message <name>"
+        # Extract recipient - pattern: "to <name>" or "message <name>" or "<name> on whatsapp"
         recipient = None
         recipient_patterns = [
-            r'to\s+([a-zA-Z]+)',  # "to mom", "to boss"
+            r'to\s+([a-zA-Z]+)',  # "to mom", "to boss" - single word only
             r'message\s+([a-zA-Z]+)',  # "message mom"
             r'dm\s+([a-zA-Z]+)',  # "dm mom"
+            r'send\s+[^to]*\s+([a-zA-Z]+)\s+on',  # "send hi to mom on" - stops at "on"
+            r'([a-zA-Z]+)\s+on\s+whatsapp',  # "mom on whatsapp" - stops at "on"
+            r'whatsapp\s+([a-zA-Z]+)',  # "whatsapp mom"
+            r'([a-zA-Z]+)\s+on\s+wa',  # "mom on wa"
         ]
         for pattern in recipient_patterns:
             match = re.search(pattern, query_lower)
             if match:
-                recipient = match.group(1)
-                break
+                recipient = match.group(1).strip()
+                # Skip if it looks like a phone number (contains digits) or common words
+                if not re.search(r'\d', recipient) and recipient not in ['hi', 'hello', 'send', 'message', 'the', 'a', 'an']:
+                    break
+                else:
+                    recipient = None
         
-        # Extract message content - everything in quotes or after "saying"
+        # Extract message content - everything in quotes or after "saying" or between "send" and "to"
         message = None
         # Try quoted content first
         quote_match = re.search(r'["\']([^"\']+)["\']', query)
@@ -86,15 +94,16 @@ Always explain which tools you're using and why."""
             parts = query.split("saying", 1)
             if len(parts) > 1:
                 message = parts[1].strip().strip('"\'.,')
-        elif "send" in query_lower:
-            # Extract everything after "send" until "to"
-            send_parts = query_lower.split("send", 1)
-            if len(send_parts) > 1:
-                between = send_parts[1].split("to")[0].strip()
+        elif "send" in query_lower and "to" in query_lower:
+            # Extract everything between "send" and "to"
+            # Pattern: "send <message> to <name>"
+            send_match = re.search(r'send\s+(.+?)\s+to\s+', query_lower)
+            if send_match:
+                message = send_match.group(1).strip()
                 # Remove common words
-                between = re.sub(r'\b(a|an|the|on|via)\b', '', between).strip()
-                if between and len(between) < 50:  # Reasonable message length
-                    message = between
+                message = re.sub(r'\b(a|an|the|on|via|whatsapp|wa|gmail|email|instagram)\b', '', message).strip()
+                if not message or len(message) > 50:
+                    message = None
         
         # Default message if not found
         if not message:

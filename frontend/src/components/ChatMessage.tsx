@@ -26,12 +26,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onApproval })
   // Check for special response types
   let approvalData: any = null;
   let displayContent = message.content;
+  let isError = false;
   
   try {
     const contentData = JSON.parse(message.content);
     
+    // Check for error status
+    if (contentData.status === 'failed' || contentData.error) {
+      isError = true;
+      const errorMsg = contentData.error || 'An error occurred';
+      const suggestion = contentData.suggestion || '';
+      displayContent = `⚠️ ${errorMsg}${suggestion ? `<br><br>💡 ${suggestion}` : ''}`;
+    }
     // Check for approval workflow (draft mode)
-    if (contentData.status === 'requires_approval') {
+    else if (contentData.status === 'requires_approval') {
       approvalData = contentData;
     }
     // Check for link generation (direct send mode)
@@ -93,7 +101,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onApproval })
             </div>
           </div>
         ) : (
-          <div dangerouslySetInnerHTML={{ __html: displayContent }} />
+          <div 
+            className={isError ? 'error-message' : ''}
+            dangerouslySetInnerHTML={{ __html: displayContent }} 
+          />
         )}
 
         {/* Display pipeline steps if they exist for this message */}
